@@ -657,8 +657,8 @@ namespace Exiv2 {
                         // extract XMP
                         if (size > 0) {
                             io_->seek(-bufRead, BasicIo::cur);
-                            byte* xmp = new byte[size + 1];
-                            io_->read(xmp, size);
+                            std::vector<byte> xmp(size + 1);
+                            io_->read(xmp.data(), size);
                             int start = 0;
 
                             // http://wwwimages.adobe.com/content/dam/Adobe/en/devnet/xmp/pdfs/XMPSpecificationPart3.pdf
@@ -672,7 +672,7 @@ namespace Exiv2 {
                                 while (xmp[start])
                                     start++;
                                 start++;
-                                if (::strstr((char*)xmp + start, "HasExtendedXMP")) {
+                                if (string_from_unterminated((char*)&xmp.at(start), size - start).find("HasExtendedXMP", start)) {
                                     start = size;  // ignore this packet, we'll get on the next time around
                                     bExtXMP = true;
                                 }
@@ -680,8 +680,7 @@ namespace Exiv2 {
                                 start = 2 + 35 + 32 + 4 + 4;  // Adobe Spec, p19
                             }
 
-                            out.write((const char*)(xmp + start), size - start);
-                            delete[] xmp;
+                            out.write((const char*)(&xmp.at(start)), size - start);
                             bufRead = size;
                             done = !bExtXMP;
                         }
